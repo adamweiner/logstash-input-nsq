@@ -47,10 +47,13 @@ class LogStash::Inputs::Nsq < LogStash::Inputs::Base
     begin
        while !stop?
           #@logger.info('consuming...')
-          event = @consumer.pop
-          #@logger.info('processing:', :event => event)
-          queue_event(event.body, logstash_queue)
-          event.finish
+          if event = @consumer.pop_without_blocking
+            #@logger.info('processing:', :event => event)
+            queue_event(event.body, logstash_queue)
+            event.finish
+          else # sleep for 10ms before checking for new messages
+            sleep 0.01
+          end
        end
        @logger.warn('Done running nsq input')
     end
